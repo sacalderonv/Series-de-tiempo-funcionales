@@ -10,7 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Simular un FAR(1)
 
-El siguiente código simula un FAR(1)
+El siguiente código simula un FAR(1) y es basado en el libro de Introduction to
+Functional Data Analysis(Piotr Kokoszka-Matthew Reimherr) de 2017.
 
 Trabajamos en $L^2[0,1]$. Diremos que $\{X_n\}$ (de media cero por simplicidad) sigue un FAR(1) si
 $$

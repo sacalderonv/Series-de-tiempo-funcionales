@@ -1,0 +1,119 @@
+---
+title: "EstimationFAR"
+output: html_document
+date: "2025-10-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Pronósticos con FAR(1)
+
+En principio usaremos el método de de componentes principales y usaremos el pronóstico de los scores basado en varios de los métodos. Luego usarmemos también el prnóstico usando directamente la ecuación del modelo FAR.
+
+```{r }
+library(ftsa)
+data(Australiasmoothfertility)
+Australiasmoothfertility
+Australiasmoothfertility$x
+Australiasmoothfertility$y
+pcafertility=ftsm(Australiasmoothfertility,
+order=2) # Se obtienen 2 componentes principales
+pronostico_ets=forecast(pcafertility,h=20,method="ets")
+plot(pronostico_ets) # Se usa ets
+
+pronostico_arima=forecast(pcafertility,h=20,method="arima")
+plot(pronostico_arima)
+
+```
+```{r Ic prediction}
+###Usando ETS
+aus_ets = forecast(ftsm(Australiasmoothfertility,
+order = 2), h = 1,method="ets")
+plot(aus_ets, ylim = c(0, 140))
+# Plot the lower and upper bounds
+lines(aus_ets$lower, col = 2)
+lines(aus_ets$upper, col = 2)
+# Add a legend to the plot
+legend("topright", c("Pronóstico Puntual ETS",
+"Intervalo de Predicción ETS"), col = c(1, 2),
+lty = 1, cex = 0.9)
+
+
+###Usando un ARIMA
+aus_arima = forecast(ftsm(Australiasmoothfertility,
+order = 2), h = 1,method="arima")
+plot(aus_arima, ylim = c(0, 140))
+# Plot the lower and upper bounds
+lines(aus_arima$lower, col = 2)
+lines(aus_arima$upper, col = 2)
+# Add a legend to the plot
+legend("topright", c("Pronóstico Puntual ARIMA",
+"Intervalo de Predicción ARIMA"), col = c(1, 2),
+lty = 1, cex = 0.9)
+
+```
+
+```{r Usando el autoregression}
+#fertility = Australiasmoothfertility$y
+#multi_forecast_sqrt_pm10 = farforecast(object = fts(seq(15, 49), fertility),h = 1, Dmax_value = 5, Pmax_value = 3)
+
+
+sqrt_pm10 = sqrt(pm_10_GR$y)
+multi_forecast_sqrt_pm10 = farforecast(object = fts(seq(0, 23.5, by = 0.5), sqrt_pm10),
+	h = 1, Dmax_value = 5, Pmax_value = 3)
+multi_forecast_sqrt_pm10
+
+
+
+
+
+```
+```{r FAR}
+library(far)
+# Simulation of a FARX process
+data1 <- simul.farx(m=10,n=400,base=base.simul.far(20,5),
+base.exo=base.simul.far(20,5),
+d.a=matrix(c(0.5,0),nrow=1,ncol=2),
+alpha.conj=matrix(c(0.2,0),nrow=1,ncol=2),
+d.rho=diag(c(0.45,0.90,0.34,0.45)),
+alpha=diag(c(0.5,0.23,0.018)),
+d.rho.exo=diag(c(0.45,0.90,0.34,0.45)),cst1=0.0)
+
+# Cross validation (joined and separate)
+model1.cv <- far.cv(data=data1, y="X", x="Z", kn=8, ncv=10, cvcrit="X",
+center=FALSE, na.rm=FALSE, joined=TRUE)
+model2.cv <- far.cv(data=data1, y="X", x="Z", kn=c(4,4), ncv=10, cvcrit="X",
+center=FALSE, na.rm=FALSE, joined=FALSE)
+print(model1.cv)
+print(model2.cv)
+k1 <- model1.cv$minL2[1]
+k2 <- model2.cv$minL2[1:2]
+# Modelization of the FARX process (joined and separate)
+model1 <- far(data=data1, y="X", x="Z", kn=k1,
+center=FALSE, na.rm=FALSE, joined=TRUE)
+model2 <- far(data=data1, y="X", x="Z", kn=k2,
+center=FALSE, na.rm=FALSE, joined=FALSE)
+
+# Predicting values
+pred1 <- predict(model1,newdata=data1)
+pred2 <- predict(model2,newdata=data1)
+# Persistence
+persist1 <- pred.persist(select.fdata(data1,date=1:399),x="X")
+# Real values
+real1 <- select.fdata(data1,date=2:400)
+errors0 <- persist1[[1]]-real1[[1]]
+errors1 <- pred1[[1]]-real1[[1]]
+errors2 <- pred2[[1]]-real1[[1]]
+# Norm of observations
+summary(real1)
+# Persistence
+summary(as.fdata(errors0))
+# FARX models
+summary(as.fdata(errors1))
+summary(as.fdata(errors2))
+
+```
+
+
